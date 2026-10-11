@@ -68,3 +68,25 @@ function createBooking(string $uid, string $roomId, string $date, string $start,
 
     return ['ok' => true, 'booking' => $data];
 }
+
+function cancelBooking(string $uid, string $bookingId): array
+{
+    $db      = getDatabase();
+    $ref     = $db->getReference('bookings/' . $bookingId);
+    $booking = $ref->getValue();
+
+    if (!$booking) {
+        return ['ok' => false, 'error' => 'Booking tidak ditemukan.'];
+    }
+    if ($booking['uid'] !== $uid) {
+        return ['ok' => false, 'error' => 'Hanya pemilik booking yang boleh membatalkan.'];
+    }
+    if ($booking['status'] !== 'booked') {
+        return ['ok' => false, 'error' => 'Booking dengan status ini tidak bisa dibatalkan.'];
+    }
+
+    $db->getReference('schedules/' . $booking['room_id'] . '/' . $bookingId)->remove();
+    $ref->remove();
+
+    return ['ok' => true];
+}
